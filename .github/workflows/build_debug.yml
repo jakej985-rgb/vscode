@@ -30,8 +30,62 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug
 
+      # Compute a versioned filename (best-effort: reads versionName/versionCode if present)
+      - name: Compute APK name
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SHA_SHORT="${GITHUB_SHA::7}"
+          RUN_NO="${GITHUB_RUN_NUMBER}"
+
+          # These paths are relative to repo root, not working-directory.
+          GRADLE_GROOVY="${GITHUB_WORKSPACE}/vscode-android/app/build.gradle"
+          GRADLE_KTS="${GITHUB_WORKSPACE}/vscode-android/app/build.gradle.kts"
+
+          VERSION_NAME=""
+          VERSION_CODE=""
+
+          if [[ -f "$GRADLE_GROOVY" ]]; then
+            # versionName "1.2.3"
+            VERSION_NAME="$(grep -E 'versionName[[:space:]]+"' -m1 "$GRADLE_GROOVY" | sed -E 's/.*versionName[[:space:]]+"([^"]+)".*/\1/' || true)"
+            # versionCode 123
+            VERSION_CODE="$(grep -E 'versionCode[[:space:]]+[0-9]+' -m1 "$GRADLE_GROOVY" | grep -oE '[0-9]+' | head -n1 || true)"
+          elif [[ -f "$GRADLE_KTS" ]]; then
+            # versionName = "1.2.3"
+            VERSION_NAME="$(grep -E 'versionName[[:space:]]*=' -m1 "$GRADLE_KTS" | sed -E 's/.*versionName[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/' || true)"
+            # versionCode = 123
+            VERSION_CODE="$(grep -E 'versionCode[[:space:]]*=' -m1 "$GRADLE_KTS" | grep -oE '[0-9]+' | head -n1 || true)"
+          fi
+
+          # Fallbacks if version fields aren’t easy to parse (common in complex Gradle setups).
+          [[ -z "${VERSION_NAME}" ]] && VERSION_NAME="0.0.0"
+          [[ -z "${VERSION_CODE}" ]] && VERSION_CODE="${RUN_NO}"
+
+          APK_FILE="vscode-android-debug-v${VERSION_NAME}-code${VERSION_CODE}-run${RUN_NO}-${SHA_SHORT}.apk"
+          echo "apk_file=${APK_FILE}" >> "$GITHUB_OUTPUT"
+
+      - name: Rename APK
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK_IN="${GITHUB_WORKSPACE}/vscode-android/app/build/outputs/apk/debug/app-debug.apk"
+          APK_OUT="${GITHUB_WORKSPACE}/vscode-android/app/build/outputs/apk/debug/${{ steps.meta.outputs.apk_file }}"
+
+          if [[ ! -f "$APK_IN" ]]; then
+            echo "Expected APK not found at: $APK_IN"
+            echo "Listing directory:"
+            ls -la "${GITHUB_WORKSPACE}/vscode-android/app/build/outputs/apk/debug" || true
+            exit 1
+          fi
+
+          mv "$APK_IN" "$APK_OUT"
+          echo "APK_OUT=$APK_OUT" >> "$GITHUB_ENV"
+
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: vscode-android/app/build/outputs/apk/debug/app-debug.apk
+          name: ${{ steps.meta.outputs.apk_file }}
+          path: ${{ env.APK_OUT }}
