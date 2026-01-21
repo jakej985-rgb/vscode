@@ -1,0 +1,34 @@
+{
+  "project": {
+    "name": "vscode-android",
+    "displayName": "CodePocket Local",
+    "description": "VS Code-like editor running locally on Android via Node.js"
+  },
+  "android": {
+    "namespace": "com.codepocket.local",
+    "compileSdk": 34,
+    "defaultConfig": {
+      "applicationId": "com.codepocket.local",
+      "minSdk": 26,
+      "targetSdk": 34,
+      "versionCode": 3,
+      "versionName": "0.3.0"
+    }
+  },
+  "build": {
+    "tool": "gradle",
+    "jdk": "17",
+    "kotlin": "1.9.0"
+  },
+  "outputs": {
+    "apk": {
+      "debug": "./app/build/outputs/apk/debug/app-debug.apk",
+      "release": "./app/build/outputs/apk/release/app-release.apk"
+    }
+  },
+  "commands": {
+    "buildDebug": "./gradlew assembleDebug",
+    "buildRelease": "./gradlew assembleRelease",
+    "clean": "./gradlew clean"
+  }
+}

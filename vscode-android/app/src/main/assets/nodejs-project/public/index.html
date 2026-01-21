@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CodePocket Editor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --bg-primary: #1e1e1e; --bg-secondary: #252526; --bg-tertiary: #2d2d30; --border-color: #3c3c3c; --text-primary: #cccccc; --text-secondary: #858585; --accent: #0078d4; --sidebar-width: 250px; --activity-bar-width: 48px; --status-bar-height: 22px; --panel-height: 200px; }
+        html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; background: var(--bg-primary); color: var(--text-primary); }
+        .app-container { display: flex; flex-direction: column; height: 100%; }
+        
+        .activity-bar { width: var(--activity-bar-width); background: var(--bg-tertiary); display: flex; flex-direction: column; align-items: center; padding-top: 10px; border-right: 1px solid var(--border-color); }
+        .activity-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.6; border-left: 2px solid transparent; transition: opacity 0.2s; position: relative; }
+        .activity-icon:hover { opacity: 1; }
+        .activity-icon.active { opacity: 1; border-left-color: var(--accent); }
+        .activity-icon svg { width: 24px; height: 24px; fill: var(--text-primary); }
+        
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: var(--sidebar-width); background: var(--bg-secondary); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 10px 15px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; letter-spacing: 0.5px; }
+        
+        .editor-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-primary); position: relative; }
+        .tabs-bar { height: 35px; background: var(--bg-secondary); display: flex; overflow-x: auto; border-bottom: 1px solid var(--border-color); }
+        .tab { height: 100%; display: flex; align-items: center; padding: 0 10px; background: var(--bg-tertiary); border-right: 1px solid var(--border-color); cursor: pointer; min-width: 120px; max-width: 200px; font-size: 12px; }
+        .tab.active { background: var(--bg-primary); border-top: 2px solid var(--accent); color: white; }
+        
+        /* Views */
+        .welcome-screen { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; color: var(--text-secondary); overflow-y: auto; }
+        .panel { height: var(--panel-height); background: var(--bg-primary); border-top: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .panel-header { padding: 4px 12px; background: var(--bg-secondary); font-size: 11px; text-transform: uppercase; font-weight: bold; display: flex; justify-content: space-between; align-items: center; height: 28px; }
+        .status-bar { height: var(--status-bar-height); background: var(--accent); display: flex; align-items: center; padding: 0 12px; color: white; font-size: 12px; cursor: default; }
+        .file-tree { flex: 1; overflow-y: auto; }
+        .file-item, .dir-item { padding: 4px 12px; cursor: pointer; display: flex; align-items: center; width: 100%; white-space: nowrap; color: var(--text-primary); }
+        .file-item:hover, .dir-item:hover { background: #37373d; }
+        
+        /* Git/Search View */
+        .scm-input { padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .scm-input textarea { width: 100%; background: #3c3c3c; border: 1px solid #3c3c3c; color: white; padding: 6px; border-radius: 2px; resize: none; min-height: 60px; font-family: inherit; }
+        .scm-changes { flex: 1; overflow-y: auto; }
+        .scm-item { padding: 4px 12px; display: flex; align-items: center; font-size: 13px; cursor: pointer; }
+        .scm-item:hover { background: #2a2d2e; }
+        .scm-badge { font-size: 10px; padding: 1px 4px; border-radius: 2px; margin-right: 6px; width: 16px; text-align: center; font-weight: bold; }
+        .scm-badge.M { color: #e2c08d; }
+        .scm-badge.A { color: #73c991; }
+        .scm-badge.D { color: #c74e39; }
+        
+        .search-item { padding: 10px; border-bottom: 1px solid var(--border-color); cursor:pointer; }
+        .search-item:hover { background: #2a2d2e; }
+        
+        /* Settings */
+        .settings-form { padding: 15px; color: var(--text-primary); display:flex; flex-direction:column; gap:15px; }
+        .form-input, .form-select { background: #3c3c3c; border: 1px solid #3c3c3c; color: white; padding: 6px; width: 100%; }
+        
+        /* Ext */
+        .ext-item { padding: 10px; border-bottom: 1px solid var(--border-color); display: flex; gap: 10px; }
+        .ext-icon { width: 36px; height: 36px; background: #333; object-fit: cover; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <script src="https://unpkg.com/isomorphic-git@1.24.5/index.umd.min.js"></script>
+</head>
+<body>
+    <div id="loading" style="position:fixed; inset:0; background:#1e1e1e; color:#ccc; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:999">Initialize...</div>
+
+    <div class="app-container">
+        <div class="main-content">
+            <div class="activity-bar">
+                <div class="activity-icon active" id="act-explorer" onclick="switchView('explorer')" title="Explorer"><svg viewBox="0 0 24 24"><path d="M17.5 0h-9L7 1.5V6H2.5L1 7.5v15.07L2.5 24h12.07L16 22.57V18h4.7l1.3-1.43V4.5L17.5 0zm0 2.12l2.38 2.38H17.5V2.12zm-3 20.38h-12v-15H7v9.07L8.5 18h6v4.5zm6-6h-12v-15H16V6h4.5v10.5z"/></svg></div>
+                <div class="activity-icon" id="act-search" onclick="switchView('search')" title="Search"><svg viewBox="0 0 24 24"><path d="M21.71 20.29l-5.01-5.01C17.54 13.68 18 11.91 18 10c0-4.41-3.59-8-8-8S2 5.59 2 10s3.59 8 8 8c1.91 0 3.68-.46 5.28-1.3l5.01 5.01c.39.39 1.02.39 1.41 0l.01-.01c.38-.38.38-1.02-.01-1.41zM4 10c0-3.31 2.69-6 6-6s6 2.69 6 6-2.69 6-6 6-6-2.69-6-6z"/></svg></div>
+                <div class="activity-icon" id="act-scm" onclick="switchView('scm')" title="Source Control"><svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6v2H5v11h11v-6h2zM9 13a3 3 0 0 1 3-3h1V7l4 3.5L13 14v-3h-1a1 1 0 0 0-1 1v1H9v-1z"/></svg></div>
+                <div class="activity-icon" id="act-extensions" onclick="switchView('extensions')" title="Extensions"><svg viewBox="0 0 24 24"><path d="M20.5 0h-17L1.5 2v19.5l2 2h17l2-2V2l-2-2zM6 14.5h3v3H6v-3zm3-6H6v3h3v-3zm3 0h3v3h-3v-3zm0 6h3v3h-3v-3zm6-6h3v3h-3v-3zm0 6h3v3h-3v-3z"/></svg></div>
+                <div style="flex:1"></div>
+                <div class="activity-icon" id="act-settings" onclick="switchView('settings')" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84a.484.484 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.488.488 0 0 0-.59.22L2.09 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.05.3-.07.63-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.27.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg></div>
+            </div>
+            
+            <div class="sidebar" id="sidebar-explorer">
+                <div class="sidebar-header"><span>EXPLORER</span> <span id="workspaceName" style="margin-left:8px; opacity:0.7"></span> <span style="cursor:pointer" onclick="refreshExplorer()">⟳</span></div>
+                <div class="file-tree" id="fileTree"></div>
+            </div>
+
+            <div class="sidebar" id="sidebar-search" style="display:none">
+                <div class="sidebar-header">SEARCH</div>
+                <div style="padding:10px;"><input type="text" id="searchInput" placeholder="Search (Enter)" onkeydown="if(event.key==='Enter') performSearch()" style="width:100%; padding:6px; background:#3c3c3c; border:1px solid #3c3c3c; color:white"></div>
+                <div id="searchList" style="flex:1; overflow-y:auto"></div>
+            </div>
+
+            <div class="sidebar" id="sidebar-scm" style="display:none">
+                <div class="sidebar-header">SOURCE CONTROL</div>
+                <div id="scm-init" style="padding:20px; display:none; flex-direction:column; gap:10px">
+                    <div style="font-size:12px; opacity:0.8"> No Git repository found.</div>
+                    <button class="btn-install" style="background:#0e639c; color:white; border:none; padding:6px" onclick="initRepo()">Initialize Repository</button>
+                </div>
+                <div id="scm-active" style="display:none; flex-direction:column; flex:1">
+                    <div class="scm-input">
+                        <textarea id="commitMsg" placeholder="Message (Ctrl+Enter to commit)"></textarea>
+                        <button class="btn-install" style="background:#0e639c; color:white; border:none; padding:4px 8px; margin-top:8px; width:100%" onclick="commit()">Commit</button>
+                    </div>
+                    <div style="padding:4px 12px; font-size:11px; font-weight:bold; opacity:0.7">CHANGES <span id="scm-count"></span> <span style="cursor:pointer; float:right" onclick="refreshGit()">⟳</span></div>
+                    <div class="scm-changes" id="scmList"></div>
+                </div>
+            </div>
+
+            <div class="sidebar" id="sidebar-extensions" style="display:none">
+                <div class="sidebar-header">EXTENSIONS</div>
+                <div style="padding:10px;"><input type="text" id="extSearch" placeholder="Search Open VSX..." onkeydown="if(event.key==='Enter') searchExtensions(this.value)" style="width:100%; padding:6px; background:#333; border:1px solid #3c3c3c; color:white"></div>
+                <div id="extList" style="flex:1; overflow-y:auto"></div>
+            </div>
+            
+            <div class="sidebar" id="sidebar-settings" style="display:none">
+                <div class="sidebar-header">SETTINGS</div>
+                <div class="settings-form">
+                    <label>Font Size <input type="number" id="set-fontSize" class="form-input" value="14" onchange="saveSettings()"></label>
+                    <label>Theme <select id="set-theme" class="form-select" onchange="saveSettings()"><option value="vs-dark">Dark</option><option value="vs">Light</option></select></label>
+                </div>
+            </div>
+
+            <div class="editor-area">
+                <div class="tabs-bar" id="tabsBar"></div>
+                <div id="monaco-container" style="flex:1; display:none"></div>
+                <div id="welcome" class="welcome-screen">
+                    <div class="welcome-hero">CodePocket</div>
+                    <div class="workspace-list" id="welcomeList">Loading...</div>
+                </div>
+                <div id="panel" class="panel" style="display:none">
+                    <div class="panel-header"><span>TERMINAL</span> <span onclick="toggleTerminal()" style="cursor:pointer">✕</span></div>
+                    <div id="terminal-container" class="panel-body"></div>
+                </div>
+            </div>
+        </div>
+        <div class="status-bar"><span id="statusState">Ready</span><span style="flex:1"></span><span onclick="toggleTerminal()" style="cursor:pointer">Terminal</span></div>
+    </div>
+
+    <script>
+        const state = { wsId: null, token: null, tabs: [], active: null, editor: null, term: null, termId: null, settings: {} };
+        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], () => { document.getElementById('loading').style.display='none'; init(); });
+
+        async function fetchAPI(u, o={}) {
+            if(state.token) o.headers={...o.headers,'Authorization':`Bearer ${state.token}`};
+            return fetch(u, o);
+        }
+
+        const fsAdapter = {
+            promises: {
+                readFile: async (p, enc) => {
+                    p = p.startsWith('/')?p.slice(1):p;
+                    const res = await fetchAPI(`/api/file?ws=${state.wsId}&path=${encodeURIComponent(p)}`);
+                    if(res.status===404) { let e=new Error('ENOENT'); e.code='ENOENT'; throw e; }
+                    const b = await res.arrayBuffer();
+                    if(enc==='utf8') return new TextDecoder().decode(b);
+                    return new Uint8Array(b);
+                },
+                writeFile: async (p, d) => {
+                    p = p.startsWith('/')?p.slice(1):p;
+                    await fetchAPI(`/api/file?ws=${state.wsId}&path=${encodeURIComponent(p)}`, {method:'POST', body:d});
+                },
+                stat: async (p) => {
+                    p = p.startsWith('/')?p.slice(1):p;
+                    if(!p||p==='.') return {size:0, isDirectory:()=>true, type:'directory', mode:16877, mtimeMs:Date.now()};
+                    const res = await fetchAPI(`/api/stat?ws=${state.wsId}&path=${encodeURIComponent(p)}`);
+                    if(res.status===404) { let e=new Error('ENOENT'); e.code='ENOENT'; throw e; }
+                    const s = await res.json();
+                    return { ...s, isDirectory:()=>s.type==='directory', isFile:()=>s.type==='file', isSymbolicLink:()=>false };
+                },
+                lstat: async (p) => fsAdapter.promises.stat(p),
+                readdir: async (p) => {
+                    p = p.startsWith('/')?p.slice(1):p;
+                    const res = await fetchAPI(`/api/readdir?ws=${state.wsId}&path=${encodeURIComponent(p)}`);
+                    if(res.status===404) { let e=new Error('ENOENT'); e.code='ENOENT'; throw e; }
+                    const d = await res.json();
+                    return d.files;
+                },
+                mkdir: async (p) => fetchAPI(`/api/mkdir?ws=${state.wsId}&path=${encodeURIComponent(p.startsWith('/')?p.slice(1):p)}`, {method:'POST'}),
+                rmdir: async (p) => fetchAPI(`/api/rmdir?ws=${state.wsId}&path=${encodeURIComponent(p.startsWith('/')?p.slice(1):p)}`, {method:'POST'}),
+                unlink: async (p) => fetchAPI(`/api/unlink?ws=${state.wsId}&path=${encodeURIComponent(p.startsWith('/')?p.slice(1):p)}`, {method:'POST'})
+            }
+        };
+
+        // --- Plugins ---
+        async function initPlugins() {
+            window.cp = {
+                registerCommand: (id, fn) => { console.log('Registered', id); },
+                showNotification: (msg) => alert(msg),
+                activeEditor: () => state.editor,
+                api: { fetch: fetchAPI },
+                openFile: openFileAt
+            };
+            try {
+                const res = await fetchAPI('/api/plugins');
+                const data = await res.json();
+                for(const p of data.plugins) {
+                    const s = document.createElement('script');
+                    s.src = `/api/plugin?name=${encodeURIComponent(p)}`;
+                    if(state.token) s.src += `&token=${state.token}`;
+                    document.head.appendChild(s);
+                }
+            } catch(e) {}
+        }
+
+        async function init() {
+            const params = new URLSearchParams(location.search);
+            state.wsId = params.get('ws');
+            state.token = params.get('token');
+            loadSettings();
+            initPlugins(); // Load plugins
+            if(state.wsId) loadWorkspace(state.wsId); else loadWorkspaceList();
+            window.addEventListener('keydown', e => { 
+                if((e.ctrlKey||e.metaKey)&&e.key==='s') { e.preventDefault(); saveFile(); } 
+                if((e.ctrlKey||e.metaKey)&&e.key==='`') { e.preventDefault(); toggleTerminal(); }
+            });
+        }
+        
+        // --- Search ---
+        async function performSearch() {
+            const q = document.getElementById('searchInput').value;
+            const l = document.getElementById('searchList');
+            l.innerHTML='<div style="padding:10px">Searching...</div>';
+            try {
+                const res = await fetchAPI(`/api/search?ws=${state.wsId}&q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if(data.length === 0) { l.innerHTML='<div style="padding:10px">No results</div>'; return; }
+                l.innerHTML = data.map(r => `<div class="search-item" onclick="openFileAt('${r.file}', ${r.line})"><div style="font-weight:bold">${r.file}</div><div style="opacity:0.7;font-size:12px">:${r.line} ${r.text.replace(/</g,'&lt;')}</div></div>`).join('');
+            } catch(e) { l.innerHTML='Error'; }
+        }
+        async function openFileAt(p, line) {
+            await openFile({path:p, name:p.split('/').pop()});
+            setTimeout(() => { if(state.editor){state.editor.revealLineInCenter(line);state.editor.setPosition({lineNumber:line,column:1});} }, 300);
+        }
+
+        // --- Git ---
+        async function checkGit() {
+            if(!state.wsId) return;
+            try {
+                await fsAdapter.promises.stat('.git');
+                document.getElementById('scm-init').style.display='none';
+                document.getElementById('scm-active').style.display='flex';
+                refreshGit();
+            } catch(e) {
+                document.getElementById('scm-init').style.display='flex';
+                document.getElementById('scm-active').style.display='none';
+            }
+        }
+        async function initRepo() { await git.init({ fs: fsAdapter, dir: '/' }); checkGit(); }
+        async function refreshGit() {
+            try {
+                const s = await git.statusMatrix({ fs: fsAdapter, dir: '/' });
+                const changes = s.filter(r => r[1]!==r[2] || r[1]!==1); 
+                const l = document.getElementById('scmList'); l.innerHTML='';
+                if(changes.length===0) { l.innerHTML='<div style="padding:10px; opacity:0.5">No changes</div>'; return; }
+                changes.forEach(c => {
+                    const f=c[0]; const type=c[2]===0?'D':(c[1]===0?'A':'M');
+                    l.innerHTML+=`<div class="scm-item"><span class="scm-badge ${type}">${type}</span> ${f}</div>`;
+                });
+                document.getElementById('scm-count').textContent = changes.length;
+            } catch(e) {}
+        }
+        async function commit() {
+            const m = document.getElementById('commitMsg').value; if(!m) return;
+            try { await git.add({ fs: fsAdapter, dir: '/', filepath: '.' }); await git.commit({ fs: fsAdapter, dir: '/', author: {name:'User', email:'local@device'}, message: m }); document.getElementById('commitMsg').value=''; refreshGit(); } catch(e) { alert('Commit fail: '+e.message); }
+        }
+
+        function switchView(v) {
+            document.querySelectorAll('.activity-icon').forEach(e=>e.classList.remove('active')); document.getElementById(`act-${v}`).classList.add('active');
+            document.querySelectorAll('.sidebar').forEach(e=>e.style.display='none'); document.getElementById(`sidebar-${v}`).style.display='flex';
+            if(v==='scm') checkGit();
+        }
+        
+        async function loadWorkspaceList() { const res=await fetchAPI('/api/workspaces'); const d=await res.json(); const l=document.getElementById('welcomeList'); l.innerHTML = (d.workspaces||[]).map(w=>`<div class="workspace-card" onclick="openWs('${w}')"><div class="ws-name">${w}</div></div>`).join(''); }
+        function openWs(id) { let u=`?ws=${id}`; if(state.token)u+=`&token=${state.token}`; history.pushState({},'',u); state.wsId=id; loadWorkspace(id); }
+        async function loadWorkspace(id) { document.getElementById('welcome').style.display='none'; document.getElementById('workspaceName').textContent=id; refreshExplorer(); checkGit(); }
+        async function refreshExplorer() { const res=await fetchAPI(`/api/files?ws=${state.wsId}`); const d=await res.json(); renderTree(d.files, document.getElementById('fileTree'),0); }
+        function renderTree(items, el, d) { el.innerHTML=''; (items||[]).sort((a,b)=>a.type===b.type?a.name.localeCompare(b.name):a.type==='directory'?-1:1).forEach(i=>{ const dv=document.createElement('div'); dv.style.paddingLeft=`${d*12+10}px`; if(i.type==='directory') { dv.className='dir-item'; dv.innerHTML=`📁 ${i.name}`; const sub=document.createElement('div'); sub.style.display='none'; dv.onclick=e=>{e.stopPropagation();sub.style.display=sub.style.display==='block'?'none':'block';}; el.append(dv,sub); if(i.children)renderTree(i.children,sub,d+1); } else { dv.className='file-item'; dv.innerHTML=`📄 ${i.name}`; dv.onclick=()=>openFile(i); el.append(dv); } }); }
+        async function openFile(i) { let tab=state.tabs.find(t=>t.path===i.path); if(tab){activateTab(tab);return;} const res=await fetchAPI(`/api/file?ws=${state.wsId}&path=${encodeURIComponent(i.path)}`); const txt=await res.text(); const m=monaco.editor.createModel(txt,undefined,monaco.Uri.file(i.name)); tab={path:i.path,name:i.name,model:m}; state.tabs.push(tab); addTabUI(tab); activateTab(tab); }
+        function addTabUI(tab) { const d=document.createElement('div'); d.className='tab'; d.textContent=tab.name; d.onclick=()=>activateTab(tab); const x=document.createElement('span'); x.className='tab-close'; x.textContent='✕'; x.onclick=e=>{e.stopPropagation();closeTab(tab)}; d.appendChild(x); tab.el=d; document.getElementById('tabsBar').appendChild(d); }
+        function activateTab(tab) { state.active=tab; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); tab.el.classList.add('active'); document.getElementById('welcome').style.display='none'; document.getElementById('monaco-container').style.display='block'; if(!state.editor) state.editor=monaco.editor.create(document.getElementById('monaco-container'),{theme:state.settings.theme||'vs-dark',automaticLayout:true}); state.editor.setModel(tab.model); }
+        function closeTab(tab) { state.tabs=state.tabs.filter(t=>t!==tab); tab.el.remove(); tab.model.dispose(); if(state.active===tab) { state.active=state.tabs[state.tabs.length-1]; if(state.active)activateTab(state.active); else { document.getElementById('monaco-container').style.display='none'; document.getElementById('welcome').style.display='flex'; } } }
+        async function saveFile() { if(!state.active)return; await fetchAPI(`/api/file?ws=${state.wsId}&path=${encodeURIComponent(state.active.path)}`,{method:'POST',body:state.active.model.getValue()}); document.getElementById('statusState').innerText='Saved'; checkGit(); }
+        async function toggleTerminal() { const p=document.getElementById('panel'); if(p.style.display==='none'){p.style.display='flex';if(!state.term)initTerminal();state.editor?.layout();}else{p.style.display='none';state.editor?.layout();} }
+        async function initTerminal() { if(!window.Terminal)return; state.term=new Terminal({theme:{background:state.settings.theme==='vs'?'#fff':'#1e1e1e',foreground:state.settings.theme==='vs'?'#000':'#ccc'},fontSize:13}); const f=new FitAddon.FitAddon(); state.term.loadAddon(f); state.term.open(document.getElementById('terminal-container')); f.fit(); const res=await fetchAPI('/api/terminals',{method:'POST'}); const d=await res.json(); state.termId=d.id; state.term.onData(da=>fetchAPI(`/api/terminals/${state.termId}/input`,{method:'POST',body:da})); pollTerminal(); }
+        async function pollTerminal() { if(!state.termId)return; try{const r=await fetchAPI(`/api/terminals/${state.termId}/output`);if(r.status===404){state.term.write('\r\n[Disk]\r\n');state.termId=null;return;}const d=await r.json();if(d.output)state.term.write(d.output);}catch(e){}setTimeout(pollTerminal,250); }
+        async function loadSettings() { try{const r=await fetchAPI('/api/settings');const s=await r.json(); state.settings={fontSize:14,theme:'vs-dark',...s}; applySettings(); document.getElementById('set-fontSize').value=state.settings.fontSize; document.getElementById('set-theme').value=state.settings.theme;}catch(u){} }
+        async function saveSettings() { const s={fontSize:parseInt(document.getElementById('set-fontSize').value),theme:document.getElementById('set-theme').value}; state.settings=s; await fetchAPI('/api/settings',{method:'POST',body:JSON.stringify(s)}); applySettings(); }
+        function applySettings() { monaco.editor.setTheme(state.settings.theme); state.editor?.updateOptions({fontSize:state.settings.fontSize}); if(state.term){state.term.options.fontSize=state.settings.fontSize; state.term.options.theme=state.settings.theme==='vs'?{background:'#fff',foreground:'#000'}:{background:'#1e1e1e',foreground:'#ccc'};} }
+        async function searchExtensions(q) { const el=document.getElementById('extList');el.innerHTML='Loading...'; try{const res=await fetch(`https://open-vsx.org/api/-/search?query=${q}`);const data=await res.json();el.innerHTML=(data.extensions||[]).map(e=>`<div class="ext-item"><img class="ext-icon" src="${e.files.icon}"><div>${e.name}</div></div>`).join('');}catch(e){el.innerHTML='Error';} }
+    </script>
+</body>
+</html>

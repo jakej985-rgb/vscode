@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">CodePocket</string>
+    <string name="app_subtitle">VS Code • Offline • Local</string>
+    <string name="version_info">v0.3.0 • Workspaces</string>
+
+    <!-- Main Activity -->
+    <string name="btn_launch_editor">Launch Editor</string>
+    <string name="btn_settings">Settings</string>
+    <string name="btn_workspaces">Workspaces</string>
+    <string name="current_url_format">%1$s</string>
+
+    <!-- Server Status -->
+    <string name="server_status_title">Server Status</string>
+    <string name="btn_start_server">Start Server</string>
+    <string name="btn_stop_server">Stop Server</string>
+    <string name="btn_view_logs">View Logs</string>
+    
+    <!-- Node Status Messages -->
+    <string name="node_status_running">● Server Running</string>
+    <string name="node_status_stopped">○ Server Stopped</string>
+    <string name="node_status_mock_mode">⚠ Mock Mode (Node.js libraries not available)</string>
+    <string name="node_status_mock_running">● Mock Server Running</string>
+    <string name="node_status_mock_available">○ Mock Mode Ready</string>
+
+    <!-- Permissions -->
+    <string name="notification_permission_required">Notification permission is required to run the server in the background</string>
+
+    <!-- Logs Dialog -->
+    <string name="dialog_logs_title">Node.js Logs</string>
+    <string name="no_logs_available">No logs available yet. Start the server to generate logs.</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_clear_logs">Clear Logs</string>
+    <string name="logs_cleared">Logs cleared</string>
+
+    <!-- WebView Activity -->
+    <string name="error_title">Connection Error</string>
+    <string name="btn_retry">Retry</string>
+
+    <!-- Settings Activity -->
+    <string name="title_settings">Settings</string>
+    <string name="settings_section_server">Server Configuration</string>
+    <string name="settings_url_hint">Server URL</string>
+    <string name="settings_presets">Quick Presets</string>
+    <string name="preset_localhost">Localhost</string>
+    <string name="preset_placeholder">Placeholder</string>
+    <string name="settings_info_title">About the Server URL</string>
+    <string name="settings_info_body">The server URL points to where VS Code Web is hosted. For local development, this is typically http://127.0.0.1:13337/ once the Node server is running. The placeholder page is used for testing the WebView shell.</string>
+    <string name="settings_reset_default">Reset to Default</string>
+    <string name="settings_reset">Settings reset to default</string>
+
+    <!-- Workspace Manager -->
+    <string name="title_workspaces">Workspaces</string>
+    <string name="btn_add_workspace">Add Workspace</string>
+    <string name="btn_sync">Sync</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_cancel">Cancel</string>
+    
+    <!-- Workspace Empty State -->
+    <string name="empty_workspaces_title">No Workspaces</string>
+    <string name="empty_workspaces_message">Tap the + button to add a folder from your device</string>
+    
+    <!-- Workspace Item -->
+    <string name="workspace_file_count">%d files</string>
+    <string name="workspace_last_synced">Last synced: %s</string>
+    <string name="unsynced_changes">Unsynced changes</string>
+    
+    <!-- Workspace Progress -->
+    <string name="progress_mirroring">Mirroring workspace…</string>
+    <string name="progress_syncing">Syncing changes…</string>
+    <string name="progress_copying_files">Copying %1$d of %2$d files</string>
+    <string name="progress_syncing_files">Syncing %1$d of %2$d files</string>
+    
+    <!-- Workspace Messages -->
+    <string name="workspace_added">Workspace \"%s\" added</string>
+    <string name="workspace_deleted">Workspace deleted</string>
+    <string name="sync_complete">Changes synced successfully</string>
+    
+    <!-- Workspace Dialogs -->
+    <string name="dialog_delete_workspace_title">Delete Workspace?</string>
+    <string name="dialog_delete_workspace_message">This will delete the local copy of \"%s\". The original files will not be affected.</string>
+</resources>

@@ -1,0 +1,14 @@
+{
+  "name": "codepocket-server",
+  "version": "0.1.0",
+  "description": "CodePocket Local Node.js server - VS Code Web host",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "author": "CodePocket Local",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

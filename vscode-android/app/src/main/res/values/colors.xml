@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors (VS Code inspired) -->
+    <color name="primary">#0078D4</color>
+    <color name="primary_variant">#005A9E</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary">#9CDCFE</color>
+    <color name="secondary_variant">#569CD6</color>
+    <color name="on_secondary">#1E1E1E</color>
+
+    <!-- Background Colors (Dark theme) -->
+    <color name="background_dark">#1E1E1E</color>
+    <color name="surface">#252526</color>
+    <color name="surface_variant">#2D2D30</color>
+    <color name="outline">#3C3C3C</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#CCCCCC</color>
+    <color name="text_secondary">#858585</color>
+    <color name="text_tertiary">#5A5A5A</color>
+
+    <!-- Status Colors -->
+    <color name="error">#F44747</color>
+    <color name="warning">#FFCC00</color>
+    <color name="success">#4EC9B0</color>
+
+    <!-- Syntax Colors (for future use) -->
+    <color name="syntax_keyword">#569CD6</color>
+    <color name="syntax_string">#CE9178</color>
+    <color name="syntax_number">#B5CEA8</color>
+    <color name="syntax_comment">#6A9955</color>
+</resources>
